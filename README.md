@@ -2,6 +2,8 @@
 
 A Rust-inspired implementation of `Option` and `Result` types using generic structs.
 
+Requires: Go >= 1.18 (generics added). 
+
 ## Examples
 ```go
 value, err := MyFallibleFunction()
