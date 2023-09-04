@@ -36,7 +36,8 @@ Use `OptionType` or `ResultType` for type defintions such as function returns:
 func MyOptionalInt() OptionType[int]{
     ...
 }
-
+```
+```go
 func MyFallibleInt() ResultType[int]{
     ...
 }
