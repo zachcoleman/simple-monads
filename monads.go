@@ -1,15 +1,11 @@
 package monads
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"time"
 )
-
-type SQLDriverCompatible interface {
-	Scan(src any) error
-	Value() (driver.Value, error)
-}
 
 type OptionType[T any] struct {
 	some T
@@ -75,7 +71,7 @@ func (o *OptionType[T]) Scan(src any) error {
 			return nil
 		}
 	default:
-		return any(o.some).(SQLDriverCompatible).Scan(src)
+		return any(o.some).(sql.Scanner).Scan(src)
 	}
 }
 
@@ -87,8 +83,10 @@ func (o *OptionType[T]) ToDB() (driver.Value, error) {
 	switch any(o.some).(type) {
 	case int, int32, int64, float32, float64, bool, []byte, string, time.Time:
 		return o.some, nil
+	case driver.Valuer:
+		return any(o.some).(driver.Valuer).Value()
 	default:
-		return any(o.some).(SQLDriverCompatible).Value()
+		return nil, errors.New("incompatible types w/ sql driver")
 	}
 }
 
