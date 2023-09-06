@@ -45,4 +45,32 @@ func MyFallibleInt() ResultType[int]{
 }
 ```
 
+Supports `Scan` interface for from sql/driver and implements a `ToDB` helper method:
+```go
+db := Result(sql.Open("sqlite3", ":memory:")).Unwrap()
+defer db.Close()
+
+Result(db.Exec("CREATE TABLE test (id INTEGER PRIMARY KEY, value INTEGER)")).Unwrap()
+Result(db.Exec("INSERT INTO test (value) VALUES (1)")).Unwrap()
+
+var i *int64 // sql driver requires int64
+opt := Option(i)
+_ = db.QueryRow("SELECT value FROM test WHERE id = 1").Scan(&opt)
+fmt.Println(opt.Some()) // prints 1
+```
+
+```go
+db := Result(sql.Open("sqlite3", ":memory:")).Unwrap()
+defer db.Close()
+
+Result(db.Exec("CREATE TABLE test (id INTEGER PRIMARY KEY, value INTEGER)")).Unwrap()
+
+var i *int64 // sql driver requires int64
+opt := Option(i)
+insert := Result(db.Exec(
+	"INSERT INTO test (value) VALUES (?)",
+	Result(opt.ToDB()).Unwrap(),
+))
+```
+
 See tests for a few more examples.

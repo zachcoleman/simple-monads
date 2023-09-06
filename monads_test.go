@@ -1,7 +1,10 @@
 package monads
 
 import (
+	"database/sql"
 	"testing"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestOption(t *testing.T) {
@@ -135,5 +138,59 @@ func TestFuncReturnType(t *testing.T) {
 			return Result(0, nil)
 		}
 		return Result(0, Err("fail"))
+	}
+}
+
+func TestOptionScanSQLite(t *testing.T) {
+	db, err := sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		t.Error(err)
+	}
+	defer db.Close()
+
+	_, err = db.Exec("CREATE TABLE test (id INTEGER PRIMARY KEY, value INTEGER)")
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, err = db.Exec("INSERT INTO test (value) VALUES (1)")
+	if err != nil {
+		t.Error(err)
+	}
+
+	var i *int64 // sql driver requires int64
+	opt := Option(i)
+	err = db.QueryRow("SELECT value FROM test WHERE id = 1").Scan(&opt)
+	if err != nil {
+		t.Error(err)
+	}
+	if opt.IsNone() {
+		t.Error()
+	}
+	if opt.Some() != 1 {
+		t.Error()
+	}
+}
+
+func TestOptionValueSQLite(t *testing.T) {
+	db := Result(sql.Open("sqlite3", ":memory:")).Unwrap()
+	defer db.Close()
+
+	Result(db.Exec("CREATE TABLE test (id INTEGER PRIMARY KEY, value INTEGER)")).Unwrap()
+
+	var i *int64 // sql driver requires int64
+	opt := Option(i)
+	insert := Result(db.Exec(
+		"INSERT INTO test (value) VALUES (?)",
+		Result(opt.ToDB()).Unwrap(),
+	))
+	if insert.IsErr() {
+		t.Error(insert.Err())
+	}
+
+	var j *int64
+	err := db.QueryRow("SELECT value FROM test WHERE id = 1").Scan(&j)
+	if err != nil {
+		t.Error(err)
 	}
 }
