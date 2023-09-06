@@ -45,7 +45,7 @@ func MyFallibleInt() ResultType[int]{
 }
 ```
 
-Supports `Scan` interface for from sql/driver and implements a `ToDB` helper method:
+Supports `Scan` interface from `database/sql` and implements a `ToDB` helper method:
 ```go
 db := Result(sql.Open("sqlite3", ":memory:")).Unwrap()
 defer db.Close()
